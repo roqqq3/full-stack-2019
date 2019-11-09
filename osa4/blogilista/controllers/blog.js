@@ -1,81 +1,79 @@
-const blogRouter = require('express').Router()
-const Blog = require('../models/blog')
-const bodyParser = require('body-parser')
-const User = require('../models/user')
+const router = require('express').Router()
 const jwt = require('jsonwebtoken')
-blogRouter.use(bodyParser.json())
+const Blog = require('../models/blog')
+const User = require('../models/user')
 
-blogRouter.get('/', async (request, response) => {
-  const blogs = await Blog
-    .find({}).populate('user', {username: 1, name: 1})
+router.get('/', async (request, response) => {
+  const blogs = await Blog.find({})  
+    .populate('user', { username: 1, name: 1 })
 
-  response.json(blogs.map(blog => blog.toJSON()))
-});
-
-blogRouter.post('', async (request, response) => {
-  if (request.body.likes === undefined) {
-    request.body.likes = 0
-  }
-  if (request.body.title === undefined && request.body.url === undefined) {
-    response.status(400).json({})
-  } else {
-    const body = request.body
-    console.log(request.token)
-    const decodedToken = jwt.verify(request.token, process.env.SECRET)    
-    if (!request.token || !decodedToken.id) {      
-      return response.status(401).json({ error: 'token missing or invalid' })    
-    }
-
-    const user = await User.findById(decodedToken.id)
-
-    const blog = new Blog({
-      title: request.body.name,
-      author: request.body.number,
-      url: request.body.url,
-      likes: request.body.likes,
-      user: user.id
-    })
-
-    const savedBlog = await blog.save()
-    user.blogs = user.blogs.concat(savedBlog.id)
-    await user.save()
-    response.json(savedBlog.toJSON())
-  }
+  response.json(blogs.map(b => b.toJSON()))
 })
 
-blogRouter.put('/:id', (req, res) => {
-  const body = req.body
+router.post('/', async (request, response) => {
+  const blog = new Blog(request.body)
 
-  const blog = {
-    title: body.name,
-    author: body.number,
-    url: body.url,
-    likes: body.likes,
-    user: body.user
+  if (!request.token) {
+    return response.status(401).json({ error: 'token missing or invalid' })
   }
 
-  Blog.findByIdAndUpdate(req.params.id, blog, { new: true })
-    .then(updatedBlog => {
-      res.json(updatedBlog.toJSON())
-    })
-})
+  const decodedToken = jwt.verify(request.token, process.env.SECRET)
 
-blogRouter.delete('/:id', async (request, response) => {
-  const blog = await Blog.findById(request.params.id)
-
-  console.log(request.token)
-  const decodedToken = jwt.verify(request.token, process.env.SECRET)    
-  if (!request.token || !decodedToken.id) {      
-    return response.status(401).json({ error: 'token missing or invalid' })    
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token missing or invalid' })
   }
+    
   const user = await User.findById(decodedToken.id)
 
-  if (blog.user.toString() === user.id.toString()) {
-    Blog.remove(blog)
+  blog.user = user.id
+
+  if (!blog.url || !blog.title ) {
+    return response.status(400).send({ error: 'title or url missing'}).end()
+  }
+
+  if ( !blog.likes ) {
+    blog.likes = 0
+  }
+
+  const result = await blog.save()
+  user.blogs = user.blogs.concat(blog)
+  await user.save()
+
+  response.status(201).json(result)
+})
+
+router.put('/:id', async (request, response) => {
+  const { author, title, url,likes } = request.body
+
+  const blog = {
+    author, title, url, likes,
+  }
+
+  const updatedNote = await Blog
+    .findByIdAndUpdate(request.params.id, blog, { new: true })
+      
+  response.json(updatedNote.toJSON())
+})
+
+router.delete('/:id', async (request, response) => {
+  if (!request.token) {
+    return response.status(401).json({ error: 'token missing' })
+  }
+
+  const decodedToken = jwt.verify(request.token, process.env.SECRET)
+
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: 'token missing or invalid' })
+  }
+
+  const blog = await Blog.findById(request.params.id)
+
+  if (blog.user.toString() === decodedToken.id) {
+    await Blog.findByIdAndRemove(request.params.id)
     response.status(204).end()
   } else {
-    response.status(400).end()
+    response.status(404).end()
   }
 })
 
-module.exports = blogRouter
+module.exports = router
