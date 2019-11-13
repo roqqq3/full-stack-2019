@@ -7,10 +7,7 @@ const AnecdoteList = (props) => {
 
   const vote = (id) => {
     props.voteAnecdote(id)
-    props.setNotification('You voted ' + props.anecdotes.find(i => i.id === id).content)
-    setTimeout(() => {
-      props.setNotification(null)
-    }, 5000)
+    props.setNotification('You voted ' + props.anecdotes.find(i => i.id === id).content, 3)
   }
 
   return (
@@ -38,7 +35,6 @@ const mapDispatchToProps = {
 
 const mapStateToProps = (state) => {
   // joskus on hyödyllistä tulostaa mapStateToProps:ista...
-  console.log(state)
   return {
     anecdotes: state.anecdotes,
     filter: state.filter,

@@ -1,15 +1,24 @@
-export const setNotification = (content) => {
-  return {
-    type: 'CHANGENOTIFICATION',
-    data: content
+export const setNotification = (content, timeout) => {
+  return async dispatch => {
+    console.log('timeout is ' + timeout)
+    dispatch({
+      type: 'CHANGE_NOTIFICATION',
+      data: content
+    })
+    setTimeout(() => {
+      dispatch({
+        type: 'CHANGE_NOTIFICATION',
+        data: null
+      })
+    }, timeout*1000)
   }
 }
 
 const reducer = (state = null, action) => {
-  console.log('state now: ', state)
-  console.log('action', action)
+  //console.log('state now: ', state)
+  //console.log('action', action)
   switch (action.type) {
-    case 'CHANGENOTIFICATION':
+    case 'CHANGE_NOTIFICATION':
       return action.data
     default:
       return state

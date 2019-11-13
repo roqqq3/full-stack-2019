@@ -4,11 +4,11 @@ import { createAnecdote } from '../reducers/anecdoteReducer'
 
 const AnecdoteForm = (props) => {
 
-  const addAnecdote = (event) => {
+  const addAnecdote = async (event) => {
     event.preventDefault()
     const content = event.target.anecdote.value
-    props.createAnecdote(content)
     event.target.anecdote.value = ''
+    props.createAnecdote(content)
   }
 
   return (

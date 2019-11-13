@@ -6,8 +6,8 @@ export const setFilter = (content) => {
 }
 
 const reducer = (state = "", action) => {
-  console.log('state now: ', state)
-  console.log('action', action)
+  //console.log('state now: ', state)
+  //console.log('action', action)
   switch (action.type) {
     case 'CHANGE':
       return action.data

@@ -1,48 +1,50 @@
-
-
-const getId = () => (100000 * Math.random()).toFixed(0)
-
-const asObject = (anecdote) => {
-  return {
-    content: anecdote,
-    id: getId(),
-    votes: 0
-  }
-}
+import anecdoteService from '../services/anecdotes'
 
 export const createAnecdote = (content) => {
-  let objectData = asObject(content)
-  return {
-    type: 'NEW_ANECDOTE',
-    data: objectData
+  return async dispatch => {
+    const newAnecdote = await anecdoteService.createNew(content)
+    dispatch({
+      type: 'NEW_ANECDOTE',
+      data: newAnecdote,
+    })
   }
 }
 
 export const voteAnecdote = (id) => {
-  return {
-    type: 'VOTE',
-    data: id
+  return async dispatch => {
+    dispatch({
+      type: 'VOTE',
+      data: id
+    })
   }
 }
 
-export const initializeNotes = (anecdotes) => {
-  let objectData = anecdotes.map(asObject)
-  return {
-    type: 'INIT_ANECDOTES',
-    data: objectData
+const voteHelper = async object => {
+  const newAnecdote = await anecdoteService.vote(object)
+  return newAnecdote
+}
+
+export const initializeAnecdotes = () => {
+  return async dispatch => {
+    const anecdotes = await anecdoteService.getAll()
+    dispatch({
+      type: 'INIT_ANECDOTES',
+      data: anecdotes,
+    })
   }
 }
 
 const reducer = (state = [], action) => {
-  console.log('state now: ', state)
-  console.log('action', action)
+  //console.log('state now: ', state)
+  //console.log('action', action)
   switch (action.type) {
     case 'NEW_ANECDOTE': {
       return [...state, action.data]
     }
     case 'VOTE': {
       let newState = [...state]
-      newState.find(i => i.id === action.data).votes += 1
+      const found = newState.find(i => i.id === action.data)
+      voteHelper(found)
       return newState
     }
     case 'INIT_ANECDOTES': {
